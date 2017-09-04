@@ -15,16 +15,17 @@ variable "key_name" {
 
 variable "key_path" {
   description = "Path to the private key specified by key_name."
-  default = "~/.ssh/aws_personal.pem"
+  default = "~/.ssh/markbm.pem"
 }
 
 variable "tag_name" {
   description = "The AWS tag name."
+  default = "mark's terraform test"
 }
 
 variable "servers" {
   description = "The number of mongod servers to launch."
-  default = 3
+  default = 1
 }
 
 variable "region" {
@@ -37,14 +38,37 @@ variable "instance_type" {
   description = "AWS Instance type."
 }
 
-module "vpc" {
-  source = "./vpc"
+variable "volume_size" {
+  description = "EBS disk size."
+  default     = 2
+}
+
+variable "volume_type" {
+  description = "EBS disk volume type (standard, io1, gp2)."
+  default     = "standard"
+}
+
+variable "volume_iops" {
+  description = "The amount of provisioned IOPS. This must be set with a volume_type of 'io1'."
+  default     = 101
+}
+
+module "ec2" {
+  source = "./shared"
   region = "${var.region}"
-  owner  = "${var.owner}"
+}
+
+module "vpc" {
+  source   = "./vpc"
+  region   = "${var.region}"
+  owner    = "${var.owner}"
+  tag_name = "${var.tag_name}"
 }
 
 module "mongod" {
   source         = "./mongod"
+  ami_id         = "${module.ec2.ami_id}"
+  ami_username   = "${module.ec2.ami_username}"
   region         = "${var.region}"
   owner          = "${var.owner}"
   key_name       = "${var.key_name}"
@@ -54,7 +78,10 @@ module "mongod" {
   expire_on      = "${var.expire_on}"
   tag_name       = "${var.tag_name}"
   instance_type  = "${var.instance_type}"
-  servers        = 1
+  volume_size    = "${var.volume_size}"
+  volume_type    = "${var.volume_type}"
+  volume_iops    = "${var.volume_iops}"
+  servers        = "${var.servers}"
 }
 
 output "ip" {

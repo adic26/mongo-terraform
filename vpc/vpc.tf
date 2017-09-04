@@ -14,7 +14,7 @@ data "aws_route_table" "main" {
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/20"
   tags {
-    Name = "example-vpc"
+    Name = "${var.tag_name}-vpc"
   }
 }
 
@@ -24,7 +24,7 @@ resource "aws_subnet" "primary" {
   vpc_id = "${aws_vpc.main.id}"
   cidr_block = "10.0.1.0/24"
   tags {
-    Name = "example-primary"
+    Name = "${var.tag_name}-primary"
   }
 }
 
@@ -33,7 +33,7 @@ resource "aws_subnet" "secondary" {
   vpc_id = "${aws_vpc.main.id}"
   cidr_block = "10.0.2.0/24"
   tags {
-    Name = "example-secondary"
+    Name = "${var.tag_name}-secondary"
   }
 }
 
@@ -42,11 +42,11 @@ resource "aws_subnet" "tertiary" {
   vpc_id = "${aws_vpc.main.id}"
   cidr_block = "10.0.3.0/24"
   tags {
-    Name = "example-tertiary"
+    Name = "${var.tag_name}-tertiary"
   }
 }
 
-resource "aws_security_group" "example" {
+resource "aws_security_group" "main" {
   name        = "example-sg"
   description = "open mongo outbound"
   vpc_id      = "${aws_vpc.main.id}"
@@ -78,7 +78,7 @@ resource "aws_internet_gateway" "main" {
   vpc_id = "${aws_vpc.main.id}"
 
   tags {
-    Name = "main"
+    Name = "${var.tag_name}"
   }
 }
 
