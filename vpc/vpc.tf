@@ -47,7 +47,7 @@ resource "aws_subnet" "tertiary" {
 }
 
 resource "aws_security_group" "main" {
-  name        = "example-sg"
+  name        = "${var.tag_name}-sg"
   description = "open mongo outbound"
   vpc_id      = "${aws_vpc.main.id}"
 

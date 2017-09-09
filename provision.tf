@@ -20,7 +20,7 @@ variable "key_path" {
 
 variable "tag_name" {
   description = "The AWS tag name."
-  default = "mark's terraform test"
+  default = "markbm terraform test"
 }
 
 variable "servers" {
