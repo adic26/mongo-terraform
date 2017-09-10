@@ -49,15 +49,9 @@ resource "aws_instance" "cluster" {
     inline = [
 	  "chmod +x /tmp/scripts/provision.sh",
 	  "/tmp/scripts/provision.sh",
-      "echo ${var.servers} > /tmp/instance-number.txt"
+      "echo ${count.index} > /tmp/instance-number.txt"
     ]
   }
-
-  #provisioner "remote-exec" {
-  #  scripts = [
-  #    "${path.module}/scripts/provision.sh"
-  #  ]
-  #}
  
   tags {
     Name       = "${var.tag_name}-${count.index}"
@@ -66,7 +60,7 @@ resource "aws_instance" "cluster" {
   }
 }
 
-resource "null_resource" "cluster" {
+resource "null_resource" "bootstrap-replset" {
   # Changes to any instance of the cluster requires re-provisioning
   #triggers {
   #  cluster_instance_ids = "${join(",", aws_instance.cluster.*.id)}"
@@ -89,3 +83,10 @@ resource "null_resource" "cluster" {
   }
 }
 
+output "public_ips" {
+  value = "${aws_instance.cluster.*.public_ip}"
+}
+
+output "private_ips" {
+  value = "${aws_instance.cluster.*.private_ip}"
+}

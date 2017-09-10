@@ -34,7 +34,7 @@ variable "region" {
 }
 
 variable "instance_type" {
-  default     = "t2.micro"
+  default     = "m4.xlarge"
   description = "AWS Instance type."
 }
 
@@ -66,22 +66,35 @@ module "vpc" {
 }
 
 module "mongod" {
-  source         = "./mongod"
+  source         = "./spot"
   ami_id         = "${module.ec2.ami_id}"
   ami_username   = "${module.ec2.ami_username}"
   region         = "${var.region}"
   owner          = "${var.owner}"
   key_name       = "${var.key_name}"
   key_path       = "${var.key_path}"
-  security_group = "${module.vpc.security_group}"
-  subnet_id      = "${module.vpc.subnet_id}"
+  security_group = "${module.vpc.mongo_sg}"
+  subnet_ids     = "${module.vpc.subnet_ids}"
+  zones          = "2"
+  #vpc_id         = "${module.vpc.vpc_id}"
   expire_on      = "${var.expire_on}"
   tag_name       = "${var.tag_name}"
   instance_type  = "${var.instance_type}"
   volume_size    = "${var.volume_size}"
   volume_type    = "${var.volume_type}"
   volume_iops    = "${var.volume_iops}"
-  servers        = "${var.servers}"
+  servers        = "2"
+  spot_price     = "0.15"
+}
+
+module "bootstrap_replset" {
+  source          = "./bootstrap-replset"
+  ami_username    = "${module.ec2.ami_username}"
+  key_path        = "${var.key_path}"
+  region          = "${var.region}"
+  replset_name    = "appdb"
+  replset_members = "${module.mongod.private_ips}"
+  host_ip         = "${element(module.mongod.public_ips, 0)}"
 }
 
 output "public_ips" {

@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+counter=0
+
+if [ $# -eq 0 ]
+then
+  echo "No arguments supplied!"
+  exit 1
+fi
+
+if [ $# -lt 2 ]
+then
+  echo "No hosts supplied!"
+  exit 1
+fi
+
+for host in "${@:2}"
+do
+  if [ $counter -eq 0 ]
+  then
+    members="{ _id: $counter, host: \"$host\", priority: 2 }"
+  else
+    members=$members",{ _id: $counter, host: \"$host\" }"
+  fi
+  
+  while true; do
+    echo "waiting for response from mongo on $host..."
+    count=`mongo_eval $host 'printjson(db.runCommand("ping"))' 2>/dev/null | grep '{ "ok" : 1 }' | wc -l`
+    [ $count -eq 1 ] && break
+    sleep 1
+  done  
+  
+  ((counter++))
+done
+ 
+rs_config=`echo "
+   {
+      _id: \"$1\",
+      version: 1,
+      members: [
+         $members
+      ]
+   }"`
+
+
+success=`mongo --eval "rs.initiate($rs_config)" | grep '{ "ok" : 1 }' | wc -l`
+
+if [success -ne 1]; then
+  exit 1;
+fi
+
+echo "replica set initiated!"
+
+# Helper for running Javascript snippets in MongoDB.
+function mongo_eval() {
+    local host=$1
+	local cmd=$2
+    mongo --quiet --host $host --eval "$cmd"
+}

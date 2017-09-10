@@ -18,7 +18,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# e.g. Create subnets in the first two available availability zones
 resource "aws_subnet" "primary" {
   availability_zone = "${data.aws_availability_zones.available.names[0]}"
   vpc_id = "${aws_vpc.main.id}"
@@ -46,8 +45,8 @@ resource "aws_subnet" "tertiary" {
   }
 }
 
-resource "aws_security_group" "main" {
-  name        = "${var.tag_name}-sg"
+resource "aws_security_group" "mongo" {
+  name        = "${var.tag_name}-mongo-sg"
   description = "open mongo outbound"
   vpc_id      = "${aws_vpc.main.id}"
 
@@ -57,6 +56,41 @@ resource "aws_security_group" "main" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    #cidr_blocks = ["0.0.0.0/0"]
+	self        = true
+  }  
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "opsmgr" {
+  name        = "${var.tag_name}-opsmgr-sg"
+  description = "open opsmgr outbound"
+  vpc_id      = "${aws_vpc.main.id}"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
   
   ingress {
     from_port   = 0
@@ -88,3 +122,22 @@ resource "aws_route" "r" {
   gateway_id = "${aws_internet_gateway.main.id}"
 }
 
+output "mongo_sg" {
+    value = "${aws_security_group.mongo.id}"
+}
+
+output "opsmgr_sg" {
+    value = "${aws_security_group.opsmgr.id}"
+}
+
+output "subnet_ids" {
+    value = ["${aws_subnet.primary.id}","${aws_subnet.secondary.id}","${aws_subnet.tertiary.id}"]
+}
+
+#output "vpc_id" {
+#    value = "${aws_vpc.main.id}"
+#}
+
+#output "subnet_zones" {
+#    value = #["${aws_subnet.primary.availability_zone}","${aws_subnet.secondary.availability_zone}","${aws_subnet.tertiary.availability_zone}"]
+#}
