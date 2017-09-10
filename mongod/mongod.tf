@@ -3,7 +3,16 @@ provider "aws" {
   region = "${var.region}"
 }
 
-resource "aws_instance" "server" {
+resource "template_dir" "config" {
+  source_dir      = "${path.module}/templates"
+  destination_dir = "${path.cwd}/config"
+
+  vars {
+    replset	= "${var.replset}"
+  }
+}
+
+resource "aws_instance" "cluster" {
   ami                         = "${var.ami_id}"
   instance_type               = "${var.instance_type}"
   vpc_security_group_ids      = ["${var.security_group}"]
@@ -24,35 +33,59 @@ resource "aws_instance" "server" {
      private_key = "${file("${var.key_path}")}"
   }
   
-  # copy provisioning files to /tmp
+  # copy provisioning files
   provisioner "file" {
     source = "${path.module}/scripts"
     destination = "/tmp"
   }
-
-  # move ulimit file to /etc
-  provisioner "remote-exec" {
-    inline = [
-      "sudo mv /tmp/scripts/99-mongodb-nproc.conf /etc/security/limits.d"
-    ]
+  
+  # copy config files
+  provisioner "file" {
+    source = "${template_dir.config.destination_dir}"
+    destination = "/tmp"
   }
 
   provisioner "remote-exec" {
     inline = [
+	  "chmod +x /tmp/scripts/provision.sh",
+	  "/tmp/scripts/provision.sh",
       "echo ${var.servers} > /tmp/instance-number.txt"
     ]
   }
 
-  provisioner "remote-exec" {
-    scripts = [
-      "${path.module}/scripts/provision.sh"
-    ]
-  }  
-  
+  #provisioner "remote-exec" {
+  #  scripts = [
+  #    "${path.module}/scripts/provision.sh"
+  #  ]
+  #}
+ 
   tags {
     Name       = "${var.tag_name}-${count.index}"
-	  owner      = "${var.owner}"
-	  expire-on  = "${var.expire_on}"
+    owner      = "${var.owner}"
+    expire-on  = "${var.expire_on}"
+  }
+}
+
+resource "null_resource" "cluster" {
+  # Changes to any instance of the cluster requires re-provisioning
+  #triggers {
+  #  cluster_instance_ids = "${join(",", aws_instance.cluster.*.id)}"
+  #}
+
+  # Bootstrap script can run on any instance of the cluster
+  # So we just choose the first in this case
+  connection {
+    host = "${element(aws_instance.cluster.*.public_ip, 0)}"
+	user = "${var.ami_username}"
+	private_key = "${file("${var.key_path}")}"
+  }
+
+  provisioner "remote-exec" {
+    # Bootstrap script called with private_ip of each node in the clutser
+    inline = [
+	  "chmod +x /tmp/scripts/bootstrap-replset.sh",
+      "/tmp/scripts/bootstrap-replset.sh ${var.replset} ${join(" ", aws_instance.cluster.*.private_ip)}"
+    ]
   }
 }
 

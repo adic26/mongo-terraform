@@ -25,7 +25,7 @@ variable "tag_name" {
 
 variable "servers" {
   description = "The number of mongod servers to launch."
-  default = 1
+  default = 3
 }
 
 variable "region" {
@@ -40,12 +40,12 @@ variable "instance_type" {
 
 variable "volume_size" {
   description = "EBS disk size."
-  default     = 2
+  default     = 20
 }
 
 variable "volume_type" {
   description = "EBS disk volume type (standard, io1, gp2)."
-  default     = "standard"
+  default     = "gp2"
 }
 
 variable "volume_iops" {
@@ -84,6 +84,6 @@ module "mongod" {
   servers        = "${var.servers}"
 }
 
-output "ip" {
-  value = "${module.mongod.ip}"
+output "public_ips" {
+  value = "${module.mongod.public_ips}"
 }

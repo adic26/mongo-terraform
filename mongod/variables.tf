@@ -57,3 +57,8 @@ variable "key_path" {
 variable "instance_type" {
   description = "AWS Instance type."
 }
+
+variable "replset" {
+  description = "Replicaset Name."
+  default = "appdb"
+}
