@@ -8,21 +8,6 @@ function log() {
     echo "****************** $1 ******************"
 }
 
-function install_package() {
-    sudo yum install -y -q $*
-}
-
-function download() {
-    local file=$1
-    local url=$2
-
-	log "Downloading $file..."
-	rm -f $1
-	curl -sS -LO $2
-
-    cd - > /dev/null
-}
-
 function install_dependencies() {
 	log "installing dependencies"
 
@@ -55,7 +40,7 @@ function configure_data_volume() {
 	fi
 }
 
-function install_and_configure_mongod() {
+function install_mongod() {
 	if [ ! -f "/etc/init.d/mongod" ]; then
 		log "installing mongod"
 		
@@ -80,8 +65,13 @@ function install_and_configure_mongod() {
 function install_mms() {
 	if [ ! -f "/etc/init.d/mongodb-mms" ]; then
 		log "installing Ops Mgr"
+		
+		local base_url=https://downloads.mongodb.com/on-prem-mms/rpm
+        local mms_server=mongodb-mms-$MMS_VERSION-1.x86_64.rpm
+    
+        wget $mms_server $base_url/$mms_server
 
-		sudo yum -y -q mongodb-mms
+		sudo yum -y -q install $mms_server
 		sudo chkconfig mongodb-mms on
 		
 		# start service
@@ -95,11 +85,11 @@ function disable_thp() {
 		sudo mv /tmp/scripts/disable-transparent-hugepages /etc/init.d
 		sudo chmod 755 /etc/init.d/disable-transparent-hugepages
 		sudo chkconfig --add disable-transparent-hugepages
-		sudo service start disable-transparent-hugepages
+		sudo service disable-transparent-hugepages start
 	fi
 }
 
-function install_and_configure_mms_agent() {
+function install_agent() {
 	log "installing automation agent"
 }
 
@@ -113,4 +103,14 @@ log "Starting MongoDB provisioning"
 install_dependencies
 configure_data_volume
 disable_thp
-install_and_configure_mongod
+
+for arg in "$@"
+do
+	case $arg in
+		mongod) install_mongod;;
+		mms)    install_mms;;
+		agent)  install_agent;;
+		*)        log "Unknown option: $arg"
+				  exit 1;;
+	esac
+done

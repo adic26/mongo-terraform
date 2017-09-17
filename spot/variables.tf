@@ -72,4 +72,8 @@ variable "replset" {
   default = "appdb"
 }
 
+variable "provision" {
+  description = "List of items to provision space delimited (mongod, mms, agent)."
+}
+
 variable "spot_price" {}

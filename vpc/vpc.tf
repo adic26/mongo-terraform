@@ -12,36 +12,20 @@ data "aws_route_table" "main" {
 
 # Create a VPC for the region associated with the AZ
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/20"
+  cidr_block           = "10.0.0.0/20"
+  enable_dns_hostnames = true
   tags {
     Name = "${var.tag_name}-vpc"
   }
 }
 
-resource "aws_subnet" "primary" {
-  availability_zone = "${data.aws_availability_zones.available.names[0]}"
-  vpc_id = "${aws_vpc.main.id}"
-  cidr_block = "10.0.1.0/24"
+resource "aws_subnet" "main" {
+  count             = "${length(data.aws_availability_zones.available.names)}"
+  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
+  vpc_id            = "${aws_vpc.main.id}"
+  cidr_block        = "${cidrsubnet(aws_vpc.main.cidr_block, 4, count.index+1)}"
   tags {
-    Name = "${var.tag_name}-primary"
-  }
-}
-
-resource "aws_subnet" "secondary" {
-  availability_zone = "${data.aws_availability_zones.available.names[1]}"
-  vpc_id = "${aws_vpc.main.id}"
-  cidr_block = "10.0.2.0/24"
-  tags {
-    Name = "${var.tag_name}-secondary"
-  }
-}
-
-resource "aws_subnet" "tertiary" {
-  availability_zone = "${data.aws_availability_zones.available.names[2]}"
-  vpc_id = "${aws_vpc.main.id}"
-  cidr_block = "10.0.3.0/24"
-  tags {
-    Name = "${var.tag_name}-tertiary"
+    Name = "${var.tag_name}-${count.index}"
   }
 }
 
@@ -131,12 +115,12 @@ output "opsmgr_sg" {
 }
 
 output "subnet_ids" {
-    value = ["${aws_subnet.primary.id}","${aws_subnet.secondary.id}","${aws_subnet.tertiary.id}"]
+    value = "${aws_subnet.main.*.id}"
 }
 
-#output "vpc_id" {
-#    value = "${aws_vpc.main.id}"
-#}
+output "vpc_id" {
+    value = "${aws_vpc.main.id}"
+}
 
 #output "subnet_zones" {
 #    value = #["${aws_subnet.primary.availability_zone}","${aws_subnet.secondary.availability_zone}","${aws_subnet.tertiary.availability_zone}"]

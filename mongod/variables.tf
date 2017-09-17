@@ -18,8 +18,17 @@ variable "security_group" {
   description = "The AWS Security Group ID."
 }
 
-variable "subnet_id" {
-  description = "The AWS Subnet ID."
+variable "subnet_ids" {
+  type = "list"
+  description = "The AWS Security Group ID."
+}
+
+#variable "vpc_id" {
+#  description = "VPC ID."
+#}
+
+variable "zones" {
+  description = "Number of availability zones to use"
 }
 
 variable "volume_size" {
@@ -60,5 +69,4 @@ variable "instance_type" {
 
 variable "replset" {
   description = "Replicaset Name."
-  default = "appdb"
 }

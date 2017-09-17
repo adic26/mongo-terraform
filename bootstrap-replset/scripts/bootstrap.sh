@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Helper for running Javascript snippets in MongoDB.
+function mongo_eval() {
+  local host=$1
+  local cmd=$2
+  mongo --quiet --host $host --eval "$cmd"
+}
+
 counter=0
 
 if [ $# -eq 0 ]
@@ -10,7 +17,7 @@ fi
 
 if [ $# -lt 2 ]
 then
-  echo "No hosts supplied!"
+  echo "No members supplied!"
   exit 1
 fi
 
@@ -45,15 +52,8 @@ rs_config=`echo "
 
 success=`mongo --eval "rs.initiate($rs_config)" | grep '{ "ok" : 1 }' | wc -l`
 
-if [success -ne 1]; then
+if [ "$success" != "1" ]; then
   exit 1;
+else
+  echo "replica set initiated!"
 fi
-
-echo "replica set initiated!"
-
-# Helper for running Javascript snippets in MongoDB.
-function mongo_eval() {
-    local host=$1
-	local cmd=$2
-    mongo --quiet --host $host --eval "$cmd"
-}

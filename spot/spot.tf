@@ -44,13 +44,6 @@ resource "aws_spot_instance_request" "cluster" {
   wait_for_fulfillment        = true
   spot_price                  = "${var.spot_price}"  
   associate_public_ip_address = true
-  
-  #ebs_block_device {
-  #  device_name = "/dev/xvdb"
-  #  volume_size = "${var.volume_size}"
-  #  volume_type = "${var.volume_type}"
-  #  iops        = "${var.volume_iops}"
-  #}
  
   tags {
     Name       = "${var.tag_name}-${count.index}"
@@ -63,6 +56,7 @@ resource "aws_volume_attachment" "data" {
   device_name       = "/dev/xvdb"
   volume_id         = "${element(aws_ebs_volume.data-volumes.*.id, count.index)}"
   instance_id       = "${element(aws_spot_instance_request.cluster.*.spot_instance_id, count.index)}"
+  skip_destroy      = true
   count             = "${var.servers}"
 }
 
@@ -94,11 +88,11 @@ resource "null_resource" "configure" {
   provisioner "remote-exec" {
     inline = [
 	  "chmod +x /tmp/scripts/provision.sh",
-	  "/tmp/scripts/provision.sh",
+	  "/tmp/scripts/provision.sh ${var.provision}",
       "echo ${count.index} > /tmp/instance-number.txt"
     ]
   }
-  
+
 }
 
 output "public_ips" {
