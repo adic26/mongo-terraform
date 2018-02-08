@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 DATA_DISK=/dev/xvdb
-MMS_VERSION=3.4.8.499
+MMS_VERSION=3.6.3.606
 
 # Print specified message to STDOUT with timestamp prefix.
 function log() {
@@ -69,9 +69,13 @@ function install_mms() {
 		local base_url=https://downloads.mongodb.com/on-prem-mms/rpm
         local mms_server=mongodb-mms-$MMS_VERSION-1.x86_64.rpm
     
-        wget -q $mms_server $base_url/$mms_server
+		# download RPM
+        curl -Lo /tmp/$mms_server $base_url/$mms_server
 
-		sudo yum -y -q install $mms_server
+		# install ops manager
+		sudo rpm -ivh $mms_server 
+
+		# start on reboot
 		sudo chkconfig mongodb-mms on
 		
 		# start service

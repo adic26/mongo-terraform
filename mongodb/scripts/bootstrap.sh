@@ -32,9 +32,9 @@ do
   
   while true; do
     echo "waiting for response from mongo on $host..."
-    count=`mongo_eval $host 'printjson(db.runCommand("ping"))' 2>/dev/null | grep '{ "ok" : 1 }' | wc -l`
+    count=`mongo_eval $host 'printjson(db.runCommand("ping"))' 2>/dev/null | grep '"ok" : 1' | wc -l`
     [ $count -eq 1 ] && break
-    sleep 1
+    sleep 2
   done  
   
   ((counter++))
@@ -49,10 +49,13 @@ rs_config=`echo "
       ]
    }"`
 
+output=`mongo --eval "rs.initiate($rs_config)"`
+echo $output
 
-success=`mongo --eval "rs.initiate($rs_config)" | grep '{ "ok" : 1 }' | wc -l`
+success=`echo $output | grep '"ok" : 1' | wc -l`
 
 if [ "$success" != "1" ]; then
+  echo "failed to initiate replica set"
   exit 1;
 else
   echo "replica set initiated!"

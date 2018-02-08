@@ -20,12 +20,8 @@ variable "security_group" {
 
 variable "subnet_ids" {
   type = "list"
-  description = "The AWS Security Group ID."
+  description = "The AWS Security Group IDs."
 }
-
-#variable "vpc_id" {
-#  description = "VPC ID."
-#}
 
 variable "zones" {
   description = "Number of availability zones to use"
@@ -66,14 +62,3 @@ variable "key_path" {
 variable "instance_type" {
   description = "AWS Instance type."
 }
-
-variable "replset" {
-  description = "Replicaset Name."
-  default = "appdb"
-}
-
-variable "provision" {
-  description = "List of items to provision space delimited (mongod, mms, agent)."
-}
-
-variable "spot_price" {}

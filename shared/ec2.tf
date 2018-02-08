@@ -2,16 +2,6 @@ provider "aws" {
   region = "${var.region}"
 }
 
-variable "ami_owner" {
-  description = "AMI owner filter"
-  default     = "137112412989" # amazon
-}
-
-variable "ami_name_filter" {
-  description = "AMI name filter"
-  default     = "amzn-ami-hvm-*-gp2"
-}
-
 variable "region" {
   description = "The AWS region."
 }
@@ -27,7 +17,7 @@ data "aws_ami" "linux" {
 
   filter {
     name   = "name"
-    values = ["${var.ami_name_filter}"]
+    values = ["${lookup(var.ami_filters, var.platform)}"]
   }
 
   filter {
@@ -35,10 +25,12 @@ data "aws_ami" "linux" {
     values = ["hvm"]
   }
 
-  owners = ["${var.ami_owner}"]
+  owners = ["${lookup(var.ami_owners, var.platform)}"]
 }
 
 variable "user" {
+  type = "map"
+
   default = {
     ubuntu  = "ubuntu"
     rhel6   = "ec2-user"
@@ -46,6 +38,27 @@ variable "user" {
     centos7 = "centos"
     rhel7   = "ec2-user"
     amazon  = "ec2-user"
+  }
+}
+
+variable "ami_filters" {
+  type = "map"
+
+  default = {
+    rhel7   = "RHEL-7.4_HVM*"
+    amazon2 = "amzn2-ami-hvm-*-gp2"
+    amazon  = "amzn-ami-hvm-*-gp2"
+  }
+}
+
+variable "ami_owners" {
+  type = "map"
+  
+  default = {
+    rhel7   = "309956199498"
+    rhel6   = "309956199498"
+    amazon2 = "137112412989"
+    amazon  = "137112412989"
   }
 }
 

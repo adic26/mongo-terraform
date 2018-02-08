@@ -3,23 +3,9 @@ provider "aws" {
   region = "${var.region}"
 }
 
-#data "aws_subnet_ids" "vpc" {
-#  vpc_id = "${var.vpc_id}"
-#}
-
 data "aws_subnet" "vpc" {
-  # hack
-  count = 3
+  count = "${var.zones}"
   id = "${var.subnet_ids[count.index]}"
-}
-
-resource "template_dir" "config" {
-  source_dir      = "${path.module}/templates"
-  destination_dir = "${path.cwd}/config"
-
-  vars {
-    replset	= "${var.replset}"
-  }
 }
 
 resource "aws_ebs_volume" "data-volumes" {
@@ -60,41 +46,6 @@ resource "aws_volume_attachment" "data" {
   count             = "${var.servers}"
 }
 
-resource "null_resource" "configure" {
-  count = "${var.servers}"
-  
-  triggers {
-    volume_attachment = "${join(",", aws_volume_attachment.data.*.id)}"
-  }
-
-  connection {
-    host = "${element(aws_spot_instance_request.cluster.*.public_ip, count.index)}"
-    user = "${var.ami_username}"
-    private_key = "${file("${var.key_path}")}"
-  }
-  
-  # copy provisioning files
-  provisioner "file" {
-    source = "${path.module}/scripts"
-    destination = "/tmp"
-  }
-  
-  # copy config files
-  provisioner "file" {
-    source = "${template_dir.config.destination_dir}"
-    destination = "/tmp"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-	  "chmod +x /tmp/scripts/provision.sh",
-	  "/tmp/scripts/provision.sh ${var.provision}",
-      "echo ${count.index} > /tmp/instance-number.txt"
-    ]
-  }
-
-}
-
 output "public_ips" {
   value = "${aws_spot_instance_request.cluster.*.public_ip}"
 }
@@ -105,4 +56,8 @@ output "private_ips" {
 
 output "instance_ids" {
   value = "${join("\n", aws_spot_instance_request.cluster.*.spot_instance_id)}"
+}
+
+output "volume_ids" {
+  value = "${aws_volume_attachment.data.*.id}"
 }

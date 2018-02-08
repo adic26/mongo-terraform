@@ -28,6 +28,16 @@ variable "region" {
   default = "eu-west-1"
 }
 
+variable "replset" {
+  description = "The replica set name"
+  default = "appdb"
+}
+
+variable "servers" {
+  description = "The number of servers"
+  default = "1"
+}
+
 module "ec2" {
   source = "./shared"
   region = "${var.region}"
@@ -40,8 +50,8 @@ module "vpc" {
   tag_name = "${var.tag_name}"
 }
 
-module "mongod" {
-  source         = "./spot"
+module "ec2_instances" {
+  source         = "./ec2_spot"
   ami_id         = "${module.ec2.ami_id}"
   ami_username   = "${module.ec2.ami_username}"
   region         = "${var.region}"
@@ -50,30 +60,30 @@ module "mongod" {
   key_path       = "${var.key_path}"
   security_group = "${module.vpc.opsmgr_sg}"
   subnet_ids     = "${module.vpc.subnet_ids}"
-  zones          = "1"
-  #vpc_id         = "${module.vpc.vpc_id}"
+  zones          = "3"
   expire_on      = "${var.expire_on}"
   tag_name       = "${var.tag_name}"
-  instance_type  = "m4.large"
+  instance_type  = "t2.large"
   volume_size    = "20"
   volume_type    = "gp2"
   volume_iops    = "1000"
-  servers        = "1"
-  replset        = "appdb"
-  provision      = "mongod mms"
+  servers        = "${var.servers}"
   spot_price     = "0.05"
 }
 
-#module "bootstrap_replset" {
-#  source          = "./bootstrap-replset"
-#  ami_username    = "${module.ec2.ami_username}"
-#  key_path        = "${var.key_path}"
-#  region          = "${var.region}"
-#  replset_name    = "appdb"
-#  replset_members = "${module.mongod.private_ips}"
-#  host_ip         = "${element(module.mongod.public_ips, 0)}"
-#}
+module "mongodb" {
+  source         = "./mongodb"
+  region         = "${var.region}"
+  key_name       = "${var.key_name}"
+  key_path       = "${var.key_path}"
+  ami_username   = "${module.ec2.ami_username}"
+  replset        = "${var.replset}"
+  servers        = "${var.servers}"
+  public_ips     = "${module.ec2_instances.public_ips}"
+  private_ips    = "${module.ec2_instances.private_ips}"
+  volume_ids     = "${module.ec2_instances.volume_ids}"
+}
 
 output "public_ips" {
-  value = "${module.mongod.public_ips}"
+  value = "${module.ec2_instances.public_ips}"
 }
